@@ -17,6 +17,7 @@ import socket, SocketServer, struct, subprocess, sys, time, traceback
 from termcolor import colored
 
 from tcp_telnet import handle_tcp_telnet
+from tcp_ssh import handle_tcp_ssh
 from tcp_http import handle_tcp_http
 
 def handle_tcp_default(socket, dstport):
@@ -33,6 +34,7 @@ def handle_tcp_default(socket, dstport):
 	socket.close()
 
 tcp_handlers = {
+	22: handle_tcp_ssh,
 	23: handle_tcp_telnet,
 	80: handle_tcp_http
 }
