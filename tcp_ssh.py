@@ -15,40 +15,11 @@
 
 import paramiko, testrun, threading, traceback, sys
 from tcp_telnet import process_commandline, interactive_shell
+from utils import TextChannel, noexceptwrap
 
 paramiko.util.log_to_file('tcp_ssh_server.log')
 host_key_rsa = paramiko.RSAKey(filename='tcp_ssh_rsa')
 host_key_dss = paramiko.DSSKey(filename='tcp_ssh_dss')
-
-class SpyChannel(object):
-	def __init__(self, chan):
-		self.chan = chan
-	def __del__(self):
-		self.chan.__del__()
-	def __get__(self, obj, type=None):
-		return self.__class__(self.chan.__get__(obj, type))
-	def __getattr__(self, name):
-		return getattr(self.chan, name)
-	def __call__(self, *args, **kw):
-		return self.chan(*args, **kw)
-	def recv(self, *args, **kw):
-		buff = self.chan.recv(*args, **kw).replace('\r', '\n')
-		sys.stderr.write(buff)
-		return buff
-	def send(self, buff):
-		buff = buff.replace('\n', '\r\n')
-		r = self.chan.send(buff)
-		sys.stderr.write(buff[0:r])
-		return r
-
-def noexcept(func):
-	def wrapped(*args, **kw):
-		try:
-			func(*args, **kw)
-		except:
-			#print(traceback.format_exc())
-			pass
-	return wrapped
 
 class Server(paramiko.ServerInterface):
 	def __init__(self):
@@ -83,7 +54,7 @@ class Server(paramiko.ServerInterface):
 		else:
 			ps1 = '[{}@localhost ~]$ '.format(self.username)
 
-		threading.Thread(target=noexcept(interactive_shell), args=[SpyChannel(channel), ps1]).start()
+		threading.Thread(target=noexceptwrap(interactive_shell), args=[TextChannel(channel, fix_incoming_endl=True), ps1]).start()
 		return True
 
 	def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
@@ -92,7 +63,7 @@ class Server(paramiko.ServerInterface):
 
 	def check_channel_exec_request(self, channel, command):
 		print("EXEC requested: {}".format(command))
-		threading.Thread(target=noexcept(process_commandline), args=[SpyChannel(channel), command]).start()
+		threading.Thread(target=noexceptwrap(process_commandline), args=[TextChannel(channel, fix_incoming_endl=True), command]).start()
 		return True
 
 def handle_tcp_ssh(socket, dstport):
@@ -108,7 +79,6 @@ def handle_tcp_ssh(socket, dstport):
 		t.start_server(server=server)
 
 		t.join()
-		print("Done")
 
 	except Exception as err:
 		#print(traceback.format_exc())

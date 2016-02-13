@@ -13,14 +13,44 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import socket, testrun, time
+import re, socket, testrun, time, traceback, uuid
+from utils import TextChannel, readline
 
 def handle_tcp_http(socket, dstport):
-	time.sleep(2)
-	socket.send("HTTP/1.0 200 OK\r\nServer: microhttpd (MontaVista/2.4, i386-uClibc)\r\nContent-Type: text/html\r\nContent-Length: 34\r\nConnection: keep-alive\r\n\r\nmicrohttpd on Linux 2.4, it works!")
+	socket = TextChannel(socket)
 
-	time.sleep(10)
-	socket.close()
+	try:
+		keep_alive = True
+		while keep_alive:
+			firstline = readline(socket).strip()
+			rematch = re.match("([A-Z]+) ([^ ]+) ?.*", firstline)
+
+			if not rematch:
+				raise Exception('Unexpected request')
+
+			verb = rematch.group(1)
+			url = rematch.group(2)
+
+			# Skip headers
+			keep_alive = False
+			while True:
+				header = readline(socket).strip()
+				if header == '':
+					break
+				elif header.upper() == 'CONNECTION: KEEP-ALIVE':
+					keep_alive = True
+
+			socket.send("HTTP/1.0 200 OK\nServer: microhttpd (MontaVista/2.4, i386-uClibc)\nSet-Cookie: sessionToken={}; Expires=Wed, 09 Jun 2021 10:18:14 GMT\nContent-Type: text/html\nContent-Length: 38\nConnection: {}\n\nmicrohttpd on Linux 2.4, it works!\n\n".format(uuid.uuid4().hex, "keep-alive" if keep_alive else "close"))
+
+	except Exception as err:
+		#print(traceback.format_exc())
+		pass
+
+	try:
+		print("-- HTTP TRANSPORT CLOSED --")
+		socket.close()
+	except:
+		pass
 
 if __name__ == "__main__":
 	testrun.run(8080, 80, handle_tcp_http)
