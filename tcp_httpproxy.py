@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import re, testrun, traceback, uuid
-from utils import TextChannel, readline
+from utils import TextChannel, log_append, readline
 
 def make_tcp_httpproxy_handler(tcp_handler):
 	def handle_tcp_httpproxy(origsocket, dstport):
@@ -33,15 +33,23 @@ def make_tcp_httpproxy_handler(tcp_handler):
 			while readline(socket).strip() != '':
 				pass
 
-			socket.send("HTTP/1.0 200 Connection established\nProxy-agent: Netscape-Proxy/1.1\n\n")
-			print("Forwarding intruder to fake port {}/tcp".format(port_num))
+			log_append('tcp_httpproxy_connections', target, *origsocket.getpeername())
+
+			if False:
+				socket.send("HTTP/1.0 407 Proxy authentication required\nProxy-agent: Netscape-Proxy/1.1\n\n")
+				port_num = None
+			else:
+				socket.send("HTTP/1.0 200 Connection established\nProxy-agent: Netscape-Proxy/1.1\n\n")
+				print("Forwarding intruder to fake port {}/tcp".format(port_num))
 
 		except Exception as err:
 			#print(traceback.format_exc())
-			socket.close()
-			return
+			port_num = None
 
-		tcp_handler(origsocket, port_num)
+		if port_num:
+			tcp_handler(origsocket, port_num)
+		else:
+			socket.close()
 
 	return handle_tcp_httpproxy
 

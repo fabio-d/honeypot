@@ -65,7 +65,7 @@ def handle_tcp_default(sk, dstport):
 		if len(rlist) != 0:
 			data = sk.recv(20, socket.MSG_PEEK)
 	except Exception as err:
-		print(traceback.format_exc())
+		#print(traceback.format_exc())
 		pass
 
 	if data[:3] in SSL_CLIENT_HELLO_SIGNATURES:
@@ -132,8 +132,8 @@ udp_raw_agent = subprocess.Popen(['sudo', './udp_raw_agent.py', LOCAL_IP], stdin
 firstline = udp_raw_agent.stdout.readline()
 if firstline.startswith('OK') == False:
 	if firstline.startswith('ERR '):
-		print firstline[len('ERR '):].strip()
-	print "Error! UDP agent could not be started properly"
+		print(firstline[len('ERR '):].strip())
+	print("Error! UDP agent could not be started properly")
 	sys.exit(1)
 
 try:
@@ -144,6 +144,7 @@ try:
 		print(traceback.format_exc())
 
 	if server:
+		print("Started successfully, waiting for intruders...")
 		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout, udp_raw_agent.stdin]).start()
 		server.serve_forever()
 except KeyboardInterrupt:

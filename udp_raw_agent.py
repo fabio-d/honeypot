@@ -46,16 +46,21 @@ if not dev:
 try:
 	out_sk = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_UDP)
 	out_sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+except socket.error, msg:
+	print('ERR Raw socket could not be created: {}'.format(msg[1]))
+	sys.exit(1)
+
+try:
 	out_sk.bind((local_ip, 0))
 except socket.error, msg:
-	sys.stdout.write('ERR Socket could not be created: {}\n'.format(msg[1]))
+	print('ERR Raw socket could not be bound to {}: {}'.format(local_ip, msg[1]))
 	sys.exit(1)
 
 p = pcap.pcapObject()
 p.open_live(dev, 65535, 0, 100)
 p.setfilter('udp and dst host {}'.format(local_ip), 0, 0)
 
-print "OK -- {} -- Format: their_addr their_port our_port data".format(dev)
+print("OK -- {} -- Format: their_addr their_port our_port data".format(dev))
 
 def incoming_packet_handler(pktlen, data, timestamp):
 	if not data or data[12:14] != '\x08\x00':

@@ -15,14 +15,15 @@
 
 import paramiko, testrun, threading, traceback, sys
 from tcp_telnet import process_commandline, interactive_shell
-from utils import TextChannel, noexceptwrap
+from utils import TextChannel, log_append, noexceptwrap
 
-paramiko.util.log_to_file('tcp_ssh_server.log')
+paramiko.util.log_to_file('logs/tcp_ssh_server_paramiko.log')
 host_key_rsa = paramiko.RSAKey(filename='tcp_ssh_rsa')
 host_key_dss = paramiko.DSSKey(filename='tcp_ssh_dss')
 
 class Server(paramiko.ServerInterface):
-	def __init__(self):
+	def __init__(self, socket_peername):
+		self.socket_peername = socket_peername
 		self.username = None
 
 	def check_channel_request(self, kind, chanid):
@@ -33,6 +34,7 @@ class Server(paramiko.ServerInterface):
 
 	def check_auth_password(self, username, password):
 		print("Password-based authentication: user={} pass={}".format(username, password))
+		log_append('tcp_ssh_passwords', username, password, *self.socket_peername)
 		self.username =  username
 		return paramiko.AUTH_SUCCESSFUL
 		#return paramiko.AUTH_FAILED
@@ -75,7 +77,7 @@ def handle_tcp_ssh(socket, dstport):
 		t.add_server_key(host_key_rsa)
 		t.add_server_key(host_key_dss)
 
-		server = Server()
+		server = Server(socket.getpeername())
 		t.start_server(server=server)
 
 		t.join()

@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import re, shlex, testrun, traceback
-from utils import TextChannel, readline
+from utils import TextChannel, log_append, readline
 
 def process_commandline(socket, commandline):
 	if commandline.strip() == '':
@@ -92,7 +92,8 @@ def handle_tcp_telnet(socket, dstport):
 			ps1b = 'sh-4.3$ '
 
 		socket.send("Password: ")
-		readline(socket, False, 13)
+		password = readline(socket, False, 20).strip()
+		log_append('tcp_telnet_passwords', username, password, *socket.getpeername())
 
 		socket.send("\n\nSuccessfully logged in. Log in successful.\n")
 		socket.send("Busybox v1.01 (2014.08.14-10:49+0000) Built-in shell (ash)\n")
@@ -101,7 +102,7 @@ def handle_tcp_telnet(socket, dstport):
 
 		interactive_shell(socket, ps1b, 10)
 	except Exception as err:
-		print(traceback.format_exc())
+		#print(traceback.format_exc())
 		pass
 
 	try:

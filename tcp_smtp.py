@@ -13,17 +13,34 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import testrun, time, traceback, uuid
+import datetime, testrun, time, traceback, uuid
 from utils import TextChannel, readline, switchtossl
 
 def receive_data(socket):
-	while readline(socket).strip('\r\n') != '.':
-		pass
-	return "{}@localhost".format(uuid.uuid4().hex)
+	buff = ''
+	while True:
+		line = readline(socket)
+		if line.strip('\r\n') == '.':
+			break
+		buff += line
+	return buff
+
+def store_email(sender_ip, msg_id, msg_contents, msg_from, msg_to):
+	data = [ sender_ip, datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S%z"), msg_id, msg_from, "[{}]".format(','.join(msg_to)) ]
+	try:
+		with open("logs/tcp_smtp_messages.txt".format(msg_id), "a") as logfile:
+			logfile.write("{}\n".format(','.join(data)))
+		with open("logs/smtp/{}.eml".format(msg_id), "w") as emlfile:
+			emlfile.write(msg_contents)
+	except IOError as err:
+		print "store_email failed:", err
 
 def handle_tcp_smtp(plaintext_socket, dstport):
 	socket = TextChannel(plaintext_socket)
 	tls_started = False
+
+	msg_from = ''
+	msg_to = []
 
 	try:
 		socket.send("220 localhost ESMTP server ready\n")
@@ -51,14 +68,22 @@ def handle_tcp_smtp(plaintext_socket, dstport):
 			elif cmdupper.startswith('NOOP'):
 				socket.send("250 No-op Ok\n")
 			elif cmdupper.startswith('RSET'):
+				msg_from = ''
+				msg_to = []
 				socket.send("250 Reset Ok\n")
 			elif cmdupper.startswith('DATA'):
 				socket.send("354 Ok Send data ending with <CRLF>.<CRLF>\n")
-				socket.send("250 Message received: {}\n".format(receive_data(socket)))
+				msg_contents = receive_data(socket)
+				msg_id = uuid.uuid4().hex
+				store_email(plaintext_socket.getpeername()[0], msg_id, msg_contents, msg_from, msg_to)
+				socket.send("250 Message received: {}@localhost\n".format(msg_id))
 			elif cmdupper.startswith('MAIL FROM:') or cmdupper.startswith('SEND FROM:') or cmdupper.startswith('SOML FROM:') or cmdupper.startswith('SAML FROM:'):
-				socket.send("250 Sender: {} Ok\n".format(cmd[len('MAIL FROM:'):].strip()))
+				msg_from = cmd[len('MAIL FROM:'):].strip()
+				socket.send("250 Sender: {} Ok\n".format(msg_from))
 			elif cmdupper.startswith('RCPT TO:'):
-				socket.send("250 Recipient: {} Ok\n".format(cmd[len('RCTP TO:'):].strip()))
+				recipient = cmd[len('RCPT TO:'):].strip()
+				msg_to.append(recipient)
+				socket.send("250 Recipient: {} Ok\n".format(recipient))
 			else:
 				socket.send("502 Command not implemented\n")
 	except Exception as err:

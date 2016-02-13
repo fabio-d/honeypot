@@ -12,7 +12,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import select, sys, ssl, time, traceback
+import datetime, select, sys, ssl, time, traceback
 from termcolor import colored
 
 class TextChannel(object):
@@ -96,3 +96,12 @@ def switchtossl(socket):
 	except Exception as err:
 		#print(traceback.format_exc())
 		return None
+
+def log_append(log_name, *columns):
+	data = list(str(e) for e in columns)
+	data.append(datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S%z"))
+	try:
+		with open("logs/{}.txt".format(log_name), "a") as logfile:
+			logfile.write("{}\n".format(','.join(data)))
+	except IOError as err:
+		print "log_append failed:", err
