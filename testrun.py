@@ -12,11 +12,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import SocketServer
+import SocketServer, sys
 
 def run(realport, fakeport, handler):
 	class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		def handle(self):
+			srcaddr, srcport = self.request.getpeername()
+			print("Connection from {}:{}".format(srcaddr, srcport))
 			handler(self.request, fakeport)
 
 	class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):

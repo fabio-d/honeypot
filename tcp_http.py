@@ -13,28 +13,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import qtestlib, socket, time
+import socket, testrun, time
 
-def read_to_endl(socket):
-	while True:
-		c = socket.recv(1)
-		socket.send(c)
-		if c == '\n':
-			break
-
-def handle_telnet(socket, dstport):
-	socket.send("Linux-x86/2.4\nSamsung Smart TV\n\nlocalhost login: ")
-	read_to_endl(socket)
-
-	socket.send("Password: ")
-	read_to_endl(socket)
-
-	socket.send("\n\nSuccessfully logged in.\nLog in successful.\nLog in.\nBusybox\nUbuntu\n\nroot@localhost:~# ")
+def handle_tcp_http(socket, dstport):
 	time.sleep(2)
+	socket.send("HTTP/1.0 200 OK\r\nServer: microhttpd (MontaVista/2.4, i386-uClibc)\r\nContent-Type: text/html\r\nContent-Length: 34\r\nConnection: keep-alive\r\n\r\nmicrohttpd on Linux 2.4, it works!")
 
-	socket.send("\nsh-4.3$ ")
-	time.sleep(2)
+	time.sleep(10)
 	socket.close()
 
 if __name__ == "__main__":
-	qtestlib.run(2049, 23, handle_telnet)
+	testrun.run(8080, 80, handle_tcp_http)

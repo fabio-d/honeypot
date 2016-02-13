@@ -14,18 +14,27 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import socket, SocketServer, struct, subprocess, sys, time, traceback
+from termcolor import colored
 
-from h_telnet import handle_telnet
-from h_http import handle_http
+from tcp_telnet import handle_tcp_telnet
+from tcp_http import handle_tcp_http
 
-def handle_default(socket, dstport):
-	#socket.send("What!?\n")
-	time.sleep(6)
+def handle_tcp_default(socket, dstport):
+	socket.settimeout(3)
+	try:
+		data = socket.recv(1000)
+	except Exception as err:
+		data = ''
+		pass
+	if data.startswith("GET ") or data.startswith("CONNECT "):
+		handle_tcp_http(socket, dstport)
+	else:
+		time.sleep(6)
 	socket.close()
 
-handlers = {
-	23: handle_telnet,
-	80: handle_http
+tcp_handlers = {
+	23: handle_tcp_telnet,
+	80: handle_tcp_http
 }
 
 class SingleTCPHandler(SocketServer.BaseRequestHandler):
@@ -34,8 +43,8 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		srcaddr, srcport = self.request.getpeername()
 		dstaddr, dstport = self.getoriginaldest()
 		if dstaddr == '192.168.1.123':
-			print("Intruder {}:{} connected to fake port {}".format(srcaddr, srcport, dstport))
-			handler = handlers.get(dstport, handle_default)
+			print colored("Intruder {}:{} connected to fake port {}".format(srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
+			handler = tcp_handlers.get(dstport, handle_tcp_default)
 			try:
 				handler(self.request, dstport)
 			except Exception as err:
@@ -43,7 +52,7 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 
 			self.request.close()
 		else:
-			print("Unexpected connection from {}:{} to {}:{}. Closing it.".format(srcaddr, srcport, dstaddr, dstport))
+			print colored("Unexpected connection from {}:{} to {}:{}. Closing it.".format(srcaddr, srcport, dstaddr, dstport), 'magenta', attrs=['bold'])
 			self.request.send("Get out!\n")
 			self.request.close()
 
