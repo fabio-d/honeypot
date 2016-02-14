@@ -95,9 +95,15 @@ def handle_udp(socket, data, srcpeername, dstport):
 class SingleTCPHandler(SocketServer.BaseRequestHandler):
 	def handle(self):
 		# self.request is the socket
-		timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
-		srcaddr, srcport = self.request.getpeername()
+		try:
+			srcaddr, srcport = self.request.getpeername()
+		except:
+			# This may happen if the connection gets closed by the
+			# peer while we are still spawning the thread to handle it
+			return
+
 		dstaddr, dstport = self.getoriginaldest()
+		timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
 		if dstaddr == LOCAL_IP:
 			print colored("[{}]: Intruder {}:{} connected to fake port {}/tcp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
 			handle_tcp(self.request, dstport)
