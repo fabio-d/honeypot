@@ -36,20 +36,21 @@ def make_tcp_httpproxy_handler(tcp_handler):
 			log_append('tcp_httpproxy_connections', target, *origsocket.getpeername())
 
 			if False:
+				socket.send("HTTP/1.0 200 Connection established\nProxy-agent: Netscape-Proxy/1.1\n\n")
+			else:
 				socket.send("HTTP/1.0 407 Proxy authentication required\nProxy-agent: Netscape-Proxy/1.1\n\n")
 				port_num = None
-			else:
-				socket.send("HTTP/1.0 200 Connection established\nProxy-agent: Netscape-Proxy/1.1\n\n")
-				print("Forwarding intruder to fake port {}/tcp".format(port_num))
 
 		except Exception as err:
 			#print(traceback.format_exc())
 			port_num = None
 
 		if port_num:
+			print("Forwarding intruder to fake port {}/tcp".format(port_num))
 			tcp_handler(origsocket, port_num)
 		else:
 			socket.close()
+			print("-- HTTP TRANSPORT CLOSED --")
 
 	return handle_tcp_httpproxy
 

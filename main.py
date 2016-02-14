@@ -109,7 +109,7 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 			handle_tcp(self.request, dstport)
 		else:
 			print colored("[{}]: Unexpected connection from {}:{} to {}:{}/tcp. Closing it.".format(timestr, srcaddr, srcport, dstaddr, dstport), 'magenta', attrs=['bold'])
-			self.request.send("Get out!\n")
+			self.request.send("You are connected to the wrong IP address, get out!\n")
 			self.request.close()
 
 	def getoriginaldest(self):
