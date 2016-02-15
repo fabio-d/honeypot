@@ -12,7 +12,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import select, sys, time, traceback
+import select, sys, ssl, time, traceback
 from termcolor import colored
 
 class TextChannel(object):
@@ -87,3 +87,12 @@ def readline(socket, echo=False, timeout=None):
 	if len(to_be_echoed) != 0:
 		socket.send(to_be_echoed)
 	return buff
+
+def switchtossl(socket):
+	try:
+		res = ssl.wrap_socket(socket, "tcp_ssl.key", "tcp_ssl_cert.pem", True)
+		print("SSL handshake completed")
+		return res
+	except Exception as err:
+		#print(traceback.format_exc())
+		return None

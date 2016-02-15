@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import re, socket, testrun, time, traceback, uuid
-from utils import TextChannel, readline
+from utils import TextChannel, readline, switchtossl
 
 def handle_tcp_http(socket, dstport):
 	socket = TextChannel(socket)
@@ -52,5 +52,11 @@ def handle_tcp_http(socket, dstport):
 	except:
 		pass
 
+def handle_tcp_https(socket, dstport):
+	socket = switchtossl(socket)
+	if socket:
+		handle_tcp_http(socket, dstport)
+
 if __name__ == "__main__":
-	testrun.run(8080, 80, handle_tcp_http)
+	#testrun.run(8080, 80, handle_tcp_http)
+	testrun.run(8443, 443, handle_tcp_https)

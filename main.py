@@ -18,7 +18,7 @@ from termcolor import colored
 
 from tcp_ssh import handle_tcp_ssh
 from tcp_telnet import handle_tcp_telnet
-from tcp_http import handle_tcp_http
+from tcp_http_https import handle_tcp_http, handle_tcp_https
 from tcp_hexdump import handle_tcp_hexdump
 
 LOCAL_IP = '192.168.1.123'
@@ -36,6 +36,7 @@ tcp_handlers = {
 	22: handle_tcp_ssh,
 	23: handle_tcp_telnet,
 	80: handle_tcp_http,
+	443: handle_tcp_https,
 	8080: handle_tcp_http
 }
 
