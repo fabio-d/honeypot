@@ -18,6 +18,7 @@ from termcolor import colored
 
 from tcp_ssh import handle_tcp_ssh
 from tcp_telnet import handle_tcp_telnet
+from tcp_smtp import handle_tcp_smtp
 from tcp_http_https import handle_tcp_http, handle_tcp_https
 from tcp_httpproxy import make_tcp_httpproxy_handler
 from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
@@ -46,6 +47,7 @@ handle_tcp_httpproxy = make_tcp_httpproxy_handler(handle_tcp)
 tcp_handlers = {
 	22: handle_tcp_ssh,
 	23: handle_tcp_telnet,
+	25: handle_tcp_smtp,
 	#80: handle_tcp_http,
 	443: handle_tcp_https,
 	#8080: handle_tcp_http,
