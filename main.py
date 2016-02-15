@@ -23,8 +23,11 @@ from tcp_http_https import handle_tcp_http, handle_tcp_https
 from tcp_httpproxy import make_tcp_httpproxy_handler
 from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
 
+from udp_hexdump import handle_udp_hexdump
+
 LOCAL_IP = '192.168.1.123'
 TCP_MAGIC_PORT = 1211
+UDP_DISCARD_FROM = [ '192.168.1.1', '192.168.1.4' ]
 
 SSL_CLIENT_HELLO_SIGNATURES = [
 	'\x16\x03\x03', # TLS v1.2
@@ -97,12 +100,41 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		address = "%d.%d.%d.%d" % (a1, a2, a3, a4)
 		return address, port
 
+udp_raw_agent_lock = threading.Lock()
+
 class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	daemon_threads = True
 	allow_reuse_address = True
 
 	def __init__(self, server_address, RequestHandlerClass):
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
+
+def process_incoming_udp(data, srcaddr, srcport, dstport):
+	timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
+	print colored("[{}]: Intruder {}:{} connected to fake port {}/udp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
+	handle_udp_hexdump(data, srcaddr, srcport, dstport)
+
+def udp_raw_agent_dispatcher(incoming_packets, outgoing_packets):
+	while True:
+		line = incoming_packets.readline().strip()
+		if line == '':
+			break
+
+		src_addr, src_port_str, dst_port_str, data_hex = line.split(' ', 3)
+
+		if src_addr in UDP_DISCARD_FROM:
+			continue
+
+		threading.Thread(target=process_incoming_udp, args=[data_hex.decode('hex'), src_addr, int(src_port_str), int(dst_port_str)]).start()
+
+# Start UDP raw agent (which must be run as root)
+udp_raw_agent = subprocess.Popen(['sudo', './udp_raw_agent.py', LOCAL_IP], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+firstline = udp_raw_agent.stdout.readline()
+if firstline.startswith('OK') == False:
+	if firstline.startswith('ERR '):
+		print firstline[len('ERR '):].strip()
+	print "Error! UDP agent could not be started properly"
+	sys.exit(1)
 
 try:
 	try:
@@ -112,8 +144,15 @@ try:
 		print(traceback.format_exc())
 
 	if server:
+		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout, udp_raw_agent.stdin]).start()
 		server.serve_forever()
 except KeyboardInterrupt:
 	pass
-
-sys.exit(0)
+finally:
+	try:
+		udp_raw_agent_lock.acquire()
+		udp_raw_agent.stdin.write('STOP\n')
+		udp_raw_agent_lock.release()
+	except:
+		udp_raw_agent.terminate()
+	sys.exit(0)
