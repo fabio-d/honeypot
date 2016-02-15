@@ -19,6 +19,7 @@ from termcolor import colored
 from tcp_ssh import handle_tcp_ssh
 from tcp_telnet import handle_tcp_telnet
 from tcp_http_https import handle_tcp_http, handle_tcp_https
+from tcp_httpproxy import make_tcp_httpproxy_handler
 from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
 
 LOCAL_IP = '192.168.1.123'
@@ -40,12 +41,15 @@ def handle_tcp(socket, dstport):
 		print(traceback.format_exc())
 	socket.close()
 
+handle_tcp_httpproxy = make_tcp_httpproxy_handler(handle_tcp)
+
 tcp_handlers = {
 	22: handle_tcp_ssh,
 	23: handle_tcp_telnet,
-	80: handle_tcp_http,
+	#80: handle_tcp_http,
 	443: handle_tcp_https,
-	8080: handle_tcp_http
+	#8080: handle_tcp_http,
+	8118: handle_tcp_httpproxy
 }
 
 def handle_tcp_default(sk, dstport):
@@ -64,6 +68,8 @@ def handle_tcp_default(sk, dstport):
 		handle_tcp_hexdump_ssl(sk, dstport)
 	elif data.startswith("GET "):
 		handle_tcp_http(sk, dstport)
+	elif data.startswith("CONNECT "):
+		handle_tcp_httpproxy(sk, dstport)
 	else:
 		handle_tcp_hexdump(sk, dstport)
 	sk.close()
