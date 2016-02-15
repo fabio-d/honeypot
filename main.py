@@ -147,7 +147,7 @@ def process_incoming_udp(data, srcaddr, srcport, dstport):
 	print colored("[{}]: Intruder {}:{} connected to fake port {}/udp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
 	handle_udp(UDP_socketobject_proxy(dstport), data, (srcaddr, srcport), dstport)
 
-def udp_raw_agent_dispatcher(incoming_packets):
+def udp_raw_agent_dispatcher(incoming_packets, abort_callback):
 	while True:
 		line = incoming_packets.readline().strip()
 		if line == '':
@@ -160,6 +160,7 @@ def udp_raw_agent_dispatcher(incoming_packets):
 
 		data = data_hex.decode('hex') if data_hex != '-' else ''
 		threading.Thread(target=process_incoming_udp, args=[data, src_addr, int(src_port_str), int(dst_port_str)]).start()
+	abort_callback() # Tell the main thread that we are done
 
 # TCP AND UDP INITIALIZATION
 
@@ -184,7 +185,7 @@ try:
 
 	if server:
 		print("Started successfully, waiting for intruders...")
-		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout]).start()
+		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout, server.shutdown]).start()
 		server.serve_forever()
 except KeyboardInterrupt:
 	pass
