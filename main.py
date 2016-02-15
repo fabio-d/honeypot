@@ -19,10 +19,18 @@ from termcolor import colored
 from tcp_ssh import handle_tcp_ssh
 from tcp_telnet import handle_tcp_telnet
 from tcp_http_https import handle_tcp_http, handle_tcp_https
-from tcp_hexdump import handle_tcp_hexdump
+from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
 
 LOCAL_IP = '192.168.1.123'
 TCP_MAGIC_PORT = 1211
+
+SSL_CLIENT_HELLO_SIGNATURES = [
+	'\x16\x03\x03', # TLS v1.2
+	'\x16\x03\x02', # TLS v1.1
+	'\x16\x03\x01', # TLS v1.0
+	'\x16\x03\x00', # SSL v3.0
+	'\x16\x02\x00' # SSL v2.0
+]
 
 def handle_tcp(socket, dstport):
 	handler = tcp_handlers.get(dstport, handle_tcp_default)
@@ -51,7 +59,10 @@ def handle_tcp_default(sk, dstport):
 		print(traceback.format_exc())
 		pass
 
-	if data.startswith("GET "):
+	if data[:3] in SSL_CLIENT_HELLO_SIGNATURES:
+		print colored("Guessing this is a SSL/TLS connection, attempting to handshake.", 'red', attrs=['bold'])
+		handle_tcp_hexdump_ssl(sk, dstport)
+	elif data.startswith("GET "):
 		handle_tcp_http(sk, dstport)
 	else:
 		handle_tcp_hexdump(sk, dstport)

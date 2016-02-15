@@ -15,6 +15,7 @@
 
 import ssl, testrun, traceback
 from termcolor import colored
+from utils import switchtossl
 
 def recv_and_split_blocks(socket, length):
 	buff = ''
@@ -55,5 +56,13 @@ def handle_tcp_hexdump(socket, dstport):
 	except:
 		pass
 
+def handle_tcp_hexdump_ssl(socket, dstport):
+	socket = switchtossl(socket)
+	if socket:
+		handle_tcp_hexdump(socket, dstport)
+	else:
+		print("SSL handshake failed")
+
 if __name__ == "__main__":
-	testrun.run(8888, 8888, handle_tcp_hexdump)
+	#testrun.run(8888, 8888, handle_tcp_hexdump)
+	testrun.run(8889, 8889, handle_tcp_hexdump_ssl)
