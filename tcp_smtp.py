@@ -38,6 +38,7 @@ def store_email(sender_ip, msg_id, msg_contents, msg_from, msg_to):
 def handle_tcp_smtp(plaintext_socket, dstport):
 	socket = TextChannel(plaintext_socket)
 	tls_started = False
+	ctr = 0.5
 
 	msg_from = ''
 	msg_to = []
@@ -48,6 +49,8 @@ def handle_tcp_smtp(plaintext_socket, dstport):
 		while True:
 			cmd = readline(socket)
 			cmdupper = cmd.upper() if cmd else None
+			time.sleep(ctr) # Rate limit
+			ctr *= 1.1
 
 			if not cmd or not cmd.endswith('\n'):
 				raise Exception('Invalid request')
