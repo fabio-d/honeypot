@@ -13,11 +13,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import random, re, select, socket, sys, struct
+import os, re, select, socket, sys, struct
 import ip, udp # from pyip
 import pcap # from pylibpcap
 
 local_ip = sys.argv[1]
+caller_uid = int(sys.argv[2])
+caller_gid = int(sys.argv[3])
 
 def ip4_str_to_num(ip):
 	return struct.unpack('>L', socket.inet_aton(ip))[0]
@@ -59,6 +61,13 @@ except socket.error, msg:
 p = pcap.pcapObject()
 p.open_live(dev, 65535, 0, 100)
 p.setfilter('udp and dst host {}'.format(local_ip), 0, 0)
+
+try:
+	os.setgid(caller_gid)
+	os.setuid(caller_uid)
+except OSError:
+	print('ERR Could not drop privileges')
+	sys.exit(1)
 
 print("OK -- {} -- Format: their_addr their_port our_port data".format(dev))
 

@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import datetime, select, socket, SocketServer, struct, subprocess, sys, threading, time, traceback
+import datetime, os, select, socket, SocketServer, struct, subprocess, sys, threading, time, traceback
 from termcolor import colored
 
 from tcp_ssh import handle_tcp_ssh
@@ -128,7 +128,10 @@ def udp_raw_agent_dispatcher(incoming_packets, outgoing_packets):
 		threading.Thread(target=process_incoming_udp, args=[data_hex.decode('hex'), src_addr, int(src_port_str), int(dst_port_str)]).start()
 
 # Start UDP raw agent (which must be run as root)
-udp_raw_agent = subprocess.Popen(['sudo', './udp_raw_agent.py', LOCAL_IP], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+udp_raw_agent_command_line = [ './udp_raw_agent.py', LOCAL_IP, str(os.getuid()), str(os.getgid()) ]
+if os.getuid() != 0:
+	udp_raw_agent_command_line = ['sudo', '-k'] + udp_raw_agent_command_line
+udp_raw_agent = subprocess.Popen(udp_raw_agent_command_line, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 firstline = udp_raw_agent.stdout.readline()
 if firstline.startswith('OK') == False:
 	if firstline.startswith('ERR '):
