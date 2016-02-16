@@ -104,13 +104,8 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 
 		dstaddr, dstport = self.getoriginaldest()
 		timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
-		if dstaddr == LOCAL_IP:
-			print colored("[{}]: Intruder {}:{} connected to fake port {}/tcp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
-			handle_tcp(self.request, dstport)
-		else:
-			print colored("[{}]: Unexpected connection from {}:{} to {}:{}/tcp. Closing it.".format(timestr, srcaddr, srcport, dstaddr, dstport), 'magenta', attrs=['bold'])
-			self.request.send("You are connected to the wrong IP address, get out!\n")
-			self.request.close()
+		print colored("[{}]: Intruder {}:{} connected to fake port {}/tcp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
+		handle_tcp(self.request, dstport)
 
 	def getoriginaldest(self):
 		SO_ORIGINAL_DST = 80
@@ -178,7 +173,7 @@ if firstline.startswith('OK') == False:
 
 try:
 	try:
-		server = SimpleServer(('0.0.0.0', TCP_MAGIC_PORT), SingleTCPHandler)
+		server = SimpleServer((LOCAL_IP, TCP_MAGIC_PORT), SingleTCPHandler)
 	except:
 		server = None
 		print(traceback.format_exc())
