@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os, re, select, socket, sys, struct
-import ip, udp # from pyip
+import inetutils, ip, udp # from pyip
 import pcap # from pylibpcap
 
 local_ip = sys.argv[1]
@@ -84,7 +84,11 @@ def incoming_packet_handler(pktlen, data, timestamp):
 
 def outgoing_packet_handler(src_port, dst_addr, dst_port, data):
 	udp_frag = udp.Packet(sport=src_port, dport=dst_port, data=data)
-	out_sk.sendto(udp.assemble(udp_frag, False), (dst_addr, 0))
+	udp_assembled = udp.assemble(udp_frag, False)
+	pseudo_header = socket.inet_aton(local_ip) + socket.inet_aton(dst_addr) + '\x00\x11' + struct.pack('!H', len(udp_assembled))
+	cksum = inetutils.cksum(pseudo_header + udp_assembled)
+	udp_assembled_with_cksum = udp_assembled[:6] + struct.pack('H', cksum) + udp_assembled[8:]
+	out_sk.sendto(udp_assembled_with_cksum, (dst_addr, 0))
 
 try:
 	while True:
