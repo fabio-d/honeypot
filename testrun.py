@@ -33,3 +33,22 @@ def run_tcp(realport, fakeport, handler):
 		server.serve_forever()
 	except KeyboardInterrupt:
 		sys.exit(0)
+
+def run_udp(realport, fakeport, handler):
+	class SingleUDPHandler(SocketServer.BaseRequestHandler):
+		def handle(self):
+			srcaddr, srcport = self.client_address
+			print("Packet from {}:{}".format(srcaddr, srcport))
+			handler(self.request[1], self.request[0], self.client_address, fakeport)
+
+	class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
+		daemon_threads = True
+
+		def __init__(self, server_address, RequestHandlerClass):
+			SocketServer.UDPServer.__init__(self, server_address, RequestHandlerClass)
+
+	server = SimpleServer(('127.0.0.1', realport), SingleUDPHandler)
+	try:
+		server.serve_forever()
+	except KeyboardInterrupt:
+		sys.exit(0)
