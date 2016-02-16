@@ -15,6 +15,25 @@
 import datetime, select, sys, ssl, time, traceback
 from termcolor import colored
 
+def __prettyprint(text, tee_target, *oargs, **kw):
+	text = text.replace('\r\n', '\n').replace('\r','\n')
+	lines = text.split('\n')
+	for i in range(len(lines)):
+		if i != 0:
+			tee_target.write('\n')
+		tee_target.write(colored(lines[i], *oargs, **kw))
+
+def tee_received_text(text, tee_target=sys.stderr, fix_incoming_endl=False):
+	if fix_incoming_endl:
+		text = text.replace('\r', '\n')
+	__prettyprint(text.replace('\r', ''), tee_target, 'red', 'on_yellow')
+	return text
+
+def tee_sent_text(text, tee_target=sys.stderr):
+	text = text.replace('\n', '\r\n')
+	__prettyprint(text, tee_target, 'blue', 'on_cyan')
+	return text
+
 class TextChannel(object):
 	def __init__(self, chan, tee_target=sys.stderr, fix_incoming_endl=False):
 		self.chan = chan
@@ -28,22 +47,9 @@ class TextChannel(object):
 		return self.chan(*args, **kw)
 	def recv(self, *args, **kw):
 		buff = self.chan.recv(*args, **kw)
-		if self.fix_incoming_endl:
-			buff = buff.replace('\r', '\n')
-		self.prettyprint(buff.replace('\r', ''), 'red', 'on_yellow')
-		return buff
+		return tee_received_text(buff, self.tee_target, self.fix_incoming_endl)
 	def send(self, buff):
-		buff = buff.replace('\n', '\r\n')
-		r = self.chan.send(buff)
-		self.prettyprint(buff[0:r], 'blue', 'on_cyan')
-		return r
-	def prettyprint(self, text, *oargs, **kw):
-		text = text.replace('\r\n', '\n').replace('\r','\n')
-		lines = text.split('\n')
-		for i in range(len(lines)):
-			if i != 0:
-				self.tee_target.write('\n')
-			self.tee_target.write(colored(lines[i], *oargs, **kw))
+		self.chan.send(tee_sent_text(buff, self.tee_target))
 
 def noexceptwrap(func):
 	def wrapped(*args, **kw):
