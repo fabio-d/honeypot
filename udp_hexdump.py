@@ -27,9 +27,10 @@ def hexdump(src, length=16):
 	lines.append("%04x" % len(src))
 	return lines
 
-def handle_udp_hexdump(data, srcaddr, srcport, dstport):
+def handle_udp_hexdump(socket, data, srcpeername, dstport):
 	for line in hexdump(data):
 		print colored(line, 'red', 'on_yellow')
+	#socket.sendto('what!?', srcpeername)
 
 #if __name__ == "__main__":
 #	#testrun.run_udp(8888, 8888, handle_udp_hexdump)

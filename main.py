@@ -29,6 +29,8 @@ LOCAL_IP = '192.168.1.123'
 TCP_MAGIC_PORT = 1211
 UDP_DISCARD_FROM = [ '192.168.1.1', '192.168.1.4' ]
 
+# TCP DISPATCHER
+
 SSL_CLIENT_HELLO_SIGNATURES = [
 	'\x16\x03\x03', # TLS v1.2
 	'\x16\x03\x02', # TLS v1.1
@@ -79,6 +81,17 @@ def handle_tcp_default(sk, dstport):
 		handle_tcp_hexdump(sk, dstport)
 	sk.close()
 
+# UDP DISPATCHER
+
+def handle_udp(socket, data, srcpeername, dstport):
+	handler = handle_udp_hexdump
+	try:
+		handler(socket, data, srcpeername, dstport)
+	except Exception as err:
+		print(traceback.format_exc())
+
+# TCP CONNECTION ACCEPTANCE
+
 class SingleTCPHandler(SocketServer.BaseRequestHandler):
 	def handle(self):
 		# self.request is the socket
@@ -100,8 +113,6 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		address = "%d.%d.%d.%d" % (a1, a2, a3, a4)
 		return address, port
 
-udp_raw_agent_lock = threading.Lock()
-
 class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	daemon_threads = True
 	allow_reuse_address = True
@@ -109,12 +120,28 @@ class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	def __init__(self, server_address, RequestHandlerClass):
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
+# UDP PACKET HANDLING
+
+udp_raw_agent_lock = threading.Lock()
+
+class UDP_socketobject_proxy:
+	def __init__(self, local_port):
+		self.local_port = local_port
+
+	def sendto(self, data, dest):
+		dest_ip, dest_port = dest
+		data_str = data.encode('hex') if data != '' else '-'
+		udp_raw_agent_lock.acquire()
+		udp_raw_agent.stdin.write('{} {} {} {}\n'.format(dest_ip, dest_port, self.local_port, data_str))
+		udp_raw_agent.stdin.flush()
+		udp_raw_agent_lock.release()
+
 def process_incoming_udp(data, srcaddr, srcport, dstport):
 	timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
 	print colored("[{}]: Intruder {}:{} connected to fake port {}/udp".format(timestr, srcaddr, srcport, dstport), 'magenta', attrs=['bold'])
-	handle_udp_hexdump(data, srcaddr, srcport, dstport)
+	handle_udp(UDP_socketobject_proxy(dstport), data, (srcaddr, srcport), dstport)
 
-def udp_raw_agent_dispatcher(incoming_packets, outgoing_packets):
+def udp_raw_agent_dispatcher(incoming_packets):
 	while True:
 		line = incoming_packets.readline().strip()
 		if line == '':
@@ -125,7 +152,10 @@ def udp_raw_agent_dispatcher(incoming_packets, outgoing_packets):
 		if src_addr in UDP_DISCARD_FROM:
 			continue
 
-		threading.Thread(target=process_incoming_udp, args=[data_hex.decode('hex'), src_addr, int(src_port_str), int(dst_port_str)]).start()
+		data = data_hex.decode('hex') if data_hex != '-' else ''
+		threading.Thread(target=process_incoming_udp, args=[data, src_addr, int(src_port_str), int(dst_port_str)]).start()
+
+# TCP AND UDP INITIALIZATION
 
 # Start UDP raw agent (which must be run as root)
 udp_raw_agent_command_line = [ './udp_raw_agent.py', LOCAL_IP, str(os.getuid()), str(os.getgid()) ]
@@ -148,15 +178,17 @@ try:
 
 	if server:
 		print("Started successfully, waiting for intruders...")
-		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout, udp_raw_agent.stdin]).start()
+		threading.Thread(target=udp_raw_agent_dispatcher, args=[udp_raw_agent.stdout]).start()
 		server.serve_forever()
 except KeyboardInterrupt:
 	pass
 finally:
 	try:
 		udp_raw_agent_lock.acquire()
-		udp_raw_agent.stdin.write('STOP\n')
+		udp_raw_agent.stdin.close()
 		udp_raw_agent_lock.release()
+		udp_raw_agent.wait()
 	except:
+		print(traceback.format_exc())
 		udp_raw_agent.terminate()
 	sys.exit(0)

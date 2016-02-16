@@ -69,7 +69,8 @@ except OSError:
 	print('ERR Could not drop privileges')
 	sys.exit(1)
 
-print("OK -- {} -- Format: their_addr their_port our_port data".format(dev))
+sys.stdout.write("OK -- {} -- Format: their_addr their_port our_port data\n".format(dev))
+sys.stdout.flush()
 
 def incoming_packet_handler(pktlen, data, timestamp):
 	if not data or data[12:14] != '\x08\x00':
@@ -77,20 +78,27 @@ def incoming_packet_handler(pktlen, data, timestamp):
 
 	ip_pkt = ip.disassemble(data[14:])
 	udp_frag = udp.disassemble(ip_pkt.data, False)
-	print ip_pkt.src, udp_frag.sport, udp_frag.dport, udp_frag.data.encode('hex')
+	data_str = udp_frag.data.encode('hex') if udp_frag.data != '' else '-'
+	sys.stdout.write("{} {} {} {}\n".format(ip_pkt.src, udp_frag.sport, udp_frag.dport, data_str))
+	sys.stdout.flush()
 
 def outgoing_packet_handler(src_port, dst_addr, dst_port, data):
 	udp_frag = udp.Packet(sport=src_port, dport=dst_port, data=data)
 	out_sk.sendto(udp.assemble(udp_frag, False), (dst_addr, 0))
 
-while True:
-	rlist, _, _ = select.select([p, sys.stdin], [], [], None)
+try:
+	while True:
+		rlist, _, _ = select.select([p, sys.stdin], [], [], None)
 
-	if p in rlist:
-		p.dispatch(1, incoming_packet_handler)
-	if sys.stdin in rlist:
-		line = sys.stdin.readline().strip()
-		if line == '':
-			break
-		dst_addr_str, dst_port_str, src_port_str, data_hex = line.split(' ', 3)
-		outgoing_packet_handler(int(src_port_str), dst_addr_str, int(dst_port_str), data_hex.decode('hex'))
+		if p in rlist:
+			p.dispatch(1, incoming_packet_handler)
+		if sys.stdin in rlist:
+			line = sys.stdin.readline().strip()
+			if line == '':
+				break
+
+			dst_addr_str, dst_port_str, src_port_str, data_hex = line.split(' ', 3)
+			data = data_hex.decode('hex') if data_hex != '-' else ''
+			outgoing_packet_handler(int(src_port_str), dst_addr_str, int(dst_port_str), data)
+except KeyboardInterrupt:
+	pass
