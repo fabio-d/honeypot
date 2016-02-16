@@ -95,4 +95,4 @@ def handle_tcp_ssh(socket, dstport):
 	socket.close()
 
 if __name__ == "__main__":
-	testrun.run(2200, 22, handle_tcp_ssh)
+	testrun.run_tcp(2200, 22, handle_tcp_ssh)

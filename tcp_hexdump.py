@@ -64,5 +64,5 @@ def handle_tcp_hexdump_ssl(socket, dstport):
 		print("SSL handshake failed")
 
 if __name__ == "__main__":
-	#testrun.run(8888, 8888, handle_tcp_hexdump)
-	testrun.run(8889, 8889, handle_tcp_hexdump_ssl)
+	#testrun.run_tcp(8888, 8888, handle_tcp_hexdump)
+	testrun.run_tcp(8889, 8889, handle_tcp_hexdump_ssl)

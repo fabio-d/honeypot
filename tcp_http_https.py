@@ -58,5 +58,5 @@ def handle_tcp_https(socket, dstport):
 		handle_tcp_http(socket, dstport)
 
 if __name__ == "__main__":
-	#testrun.run(8080, 80, handle_tcp_http)
-	testrun.run(8443, 443, handle_tcp_https)
+	#testrun.run_tcp(8080, 80, handle_tcp_http)
+	testrun.run_tcp(8443, 443, handle_tcp_https)

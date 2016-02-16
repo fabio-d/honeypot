@@ -112,4 +112,4 @@ def handle_tcp_telnet(socket, dstport):
 		pass
 
 if __name__ == "__main__":
-	testrun.run(2323, 23, handle_tcp_telnet)
+	testrun.run_tcp(2323, 23, handle_tcp_telnet)

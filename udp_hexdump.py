@@ -32,5 +32,4 @@ def handle_udp_hexdump(data, srcaddr, srcport, dstport):
 		print colored(line, 'red', 'on_yellow')
 
 #if __name__ == "__main__":
-#	#testrun.run(8888, 8888, handle_tcp_hexdump)
-#	testrun.run(8889, 8889, handle_tcp_hexdump_ssl)
+#	#testrun.run_udp(8888, 8888, handle_udp_hexdump)

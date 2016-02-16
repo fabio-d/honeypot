@@ -14,7 +14,7 @@
 
 import SocketServer, sys
 
-def run(realport, fakeport, handler):
+def run_tcp(realport, fakeport, handler):
 	class SingleTCPHandler(SocketServer.BaseRequestHandler):
 		def handle(self):
 			srcaddr, srcport = self.request.getpeername()

@@ -100,4 +100,4 @@ def handle_tcp_smtp(plaintext_socket, dstport):
 		pass
 
 if __name__ == "__main__":
-	testrun.run(2525, 25, handle_tcp_smtp)
+	testrun.run_tcp(2525, 25, handle_tcp_smtp)

@@ -57,4 +57,4 @@ if __name__ == "__main__":
 	def dummy_tcp_handler(socket, dstport):
 		TextChannel(socket).send("Request for port {}/tcp\n".format(dstport))
 		socket.close()
-	testrun.run(8118, 8118, make_tcp_httpproxy_handler(dummy_tcp_handler))
+	testrun.run_tcp(8118, 8118, make_tcp_httpproxy_handler(dummy_tcp_handler))
