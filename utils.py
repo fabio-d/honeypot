@@ -115,7 +115,7 @@ def readline(socket, echo=False, timeout=None):
 
 def switchtossl(socket):
 	try:
-		res = ssl.wrap_socket(socket, "tcp_ssl.key", "tcp_ssl_cert.pem", True)
+		res = ssl.wrap_socket(socket, "secrets/tcp_ssl.key", "secrets/tcp_ssl_cert.pem", True)
 		print("SSL handshake completed")
 		return res
 	except Exception as err:

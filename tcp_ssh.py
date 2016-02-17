@@ -18,8 +18,8 @@ from tcp_telnet import process_commandline, interactive_shell
 from utils import TextChannel, log_append, noexceptwrap
 
 paramiko.util.log_to_file('logs/tcp_ssh_server_paramiko.log')
-host_key_rsa = paramiko.RSAKey(filename='tcp_ssh_rsa')
-host_key_dss = paramiko.DSSKey(filename='tcp_ssh_dss')
+host_key_rsa = paramiko.RSAKey(filename='secrets/tcp_ssh_rsa')
+host_key_dss = paramiko.DSSKey(filename='secrets/tcp_ssh_dss')
 
 class Server(paramiko.ServerInterface):
 	def __init__(self, socket_peername):
