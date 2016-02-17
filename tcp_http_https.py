@@ -13,8 +13,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import re, socket, testrun, time, traceback, uuid
-from utils import TextChannel, readline, switchtossl
+import re, socket, ssl, testrun, time, traceback, uuid
+from utils import TextChannel, log_append, readline, switchtossl
+
+# Adapted from 2.7/Lib/Cookie.py
+def __getexpdate(future=0):
+	weekdayname = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
+	monthname = [ None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ]
+	year, month, day, hh, mm, ss, wd, y, z = time.gmtime(time.time() + future)
+	return "%s, %02d %3s %4d %02d:%02d:%02d GMT" % (weekdayname[wd], day, monthname[month], year, hh, mm, ss)
 
 def handle_tcp_http(socket, dstport):
 	socket = TextChannel(socket)
@@ -33,15 +40,23 @@ def handle_tcp_http(socket, dstport):
 
 			# Skip headers
 			keep_alive = False
+			user_agent = ''
 			while True:
 				header = readline(socket).strip()
 				if header == '':
 					break
 				elif header.upper() == 'CONNECTION: KEEP-ALIVE':
 					keep_alive = True
+				elif header.upper().startswith('USER-AGENT: '):
+					user_agent = header[len('USER-AGENT: '):]
 
-			socket.send("HTTP/1.0 200 OK\nServer: microhttpd (MontaVista/2.4, i386-uClibc)\nSet-Cookie: sessionToken={}; Expires=Wed, 09 Jun 2021 10:18:14 GMT\nContent-Type: text/html\nContent-Length: 38\nConnection: {}\n\nmicrohttpd on Linux 2.4, it works!\n\n".format(uuid.uuid4().hex, "keep-alive" if keep_alive else "close"))
+			session_token = uuid.uuid4().hex
+			log_append('tcp_http_requests', socket.getpeername()[0], dstport, verb, url, user_agent, session_token)
 
+			socket.send("HTTP/1.0 200 OK\nServer: microhttpd (MontaVista/2.4, i386-uClibc)\nSet-Cookie: sessionToken={}; Expires={}\nContent-Type: text/html\nContent-Length: 38\nConnection: {}\n\nmicrohttpd on Linux 2.4, it works!\n\n".format(session_token, __getexpdate(5 * 365 * 24 * 60 * 60), "keep-alive" if keep_alive else "close"))
+	except ssl.SSLError as err:
+		print("SSL error: {}".format(err.reason))
+		pass
 	except Exception as err:
 		#print(traceback.format_exc())
 		pass
@@ -53,9 +68,11 @@ def handle_tcp_http(socket, dstport):
 		pass
 
 def handle_tcp_https(socket, dstport):
-	socket = switchtossl(socket)
-	if socket:
-		handle_tcp_http(socket, dstport)
+	plaintext_socket = switchtossl(socket)
+	if plaintext_socket:
+		handle_tcp_http(plaintext_socket, dstport)
+	else:
+		socket.close()
 
 if __name__ == "__main__":
 	#testrun.run_tcp(8080, 80, handle_tcp_http)
