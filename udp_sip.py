@@ -15,7 +15,7 @@
 
 import StringIO, re, testrun, threading, time, uuid
 from termcolor import colored
-from utils import tee_received_text, tee_sent_text
+from utils import log_append, tee_received_text, tee_sent_text
 
 USER_AGENT = 'Linphone/3.5.2 (eXosip2/3.6.0)'
 #USER_AGENT = 'Asterix PBX'
@@ -106,6 +106,15 @@ def handle_udp_sip(socket, data, srcpeername, dstport):
 		rheaders = { 'From': headers['From'], 'To': headers['To'], 'Call-ID': headers['Call-ID'], 'CSeq': headers['CSeq'] }
 		rheaders['Via'] = '{};received={}'.format(headers['Via'].replace(';rport', ''), srcpeername[0])
 		rheaders['User-Agent'] = USER_AGENT
+	elif method == 'INVITE':
+		print("The intruder is trying to make a call")
+		# Pretend we don't understand to stop further interactions
+		resp = 'SIP/2.0 501 Not Implemented\n'
+		rheaders = {}
+		to_hdr = headers.get('To', '')
+		from_hdr = headers.get('From', '')
+		ua_hdr = headers.get('User-Agent', '')
+		log_append('udp_sip_invites', srcpeername[0], to_hdr, from_hdr, ua_hdr)
 	elif (method == 'ACK' or method == 'BYE'):
 		resp = 'SIP/2.0 200 OK\n'
 		rheaders = dict(headers)
