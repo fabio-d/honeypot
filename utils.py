@@ -23,6 +23,17 @@ def __prettyprint(text, tee_target, *oargs, **kw):
 			tee_target.write('\n')
 		tee_target.write(colored(lines[i], *oargs, **kw))
 
+def hexdump(src, length=16):
+	FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)])
+	res = ''
+	for c in xrange(0, len(src), length):
+		chars = src[c:c+length]
+		hexstr = ' '.join(["%02x" % ord(x) for x in chars])
+		printable = ''.join(["%s" % ((ord(x) <= 127 and FILTER[ord(x)]) or '.') for x in chars])
+		res += "%04x  %-*s  %-*s\n" % (c, length*3, hexstr, length, printable)
+	res += "%04x\n" % len(src)
+	return res
+
 def tee_received_text(text, tee_target=sys.stderr, fix_incoming_endl=False):
 	if fix_incoming_endl:
 		text = text.replace('\r', '\n')
@@ -33,6 +44,14 @@ def tee_sent_text(text, tee_target=sys.stderr):
 	text = text.replace('\n', '\r\n')
 	__prettyprint(text, tee_target, 'blue', 'on_cyan')
 	return text
+
+def tee_received_bin(data, tee_target=sys.stderr):
+	tee_received_text(hexdump(data), tee_target)
+	return data
+
+def tee_sent_bin(data, tee_target=sys.stderr):
+	tee_sent_text(hexdump(data), tee_target)
+	return data
 
 class TextChannel(object):
 	def __init__(self, chan, tee_target=sys.stderr, fix_incoming_endl=False):
