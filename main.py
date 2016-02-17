@@ -19,6 +19,8 @@ from termcolor import colored
 import GeoIP
 geoip = GeoIP.new(GeoIP.GEOIP_MEMORY_CACHE | GeoIP.GEOIP_CHECK_CACHE)
 
+from utils import log_append
+
 from tcp_ssh import handle_tcp_ssh
 from tcp_telnet import handle_tcp_telnet
 from tcp_smtp import handle_tcp_smtp
@@ -114,7 +116,9 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
 
 		dstaddr, dstport = self.getoriginaldest()
 		timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
-		print colored("[{}]: Intruder {}:{} ({}) connected to fake port {}/tcp".format(timestr, srcaddr, srcport, geoip.country_name_by_addr(srcaddr), dstport), 'magenta', attrs=['bold'])
+		origcountry = geoip.country_name_by_addr(srcaddr)
+		print colored("[{}]: Intruder {}:{} ({}) connected to fake port {}/tcp".format(timestr, srcaddr, srcport, origcountry, dstport), 'magenta', attrs=['bold'])
+		log_append('intruders', 'TCP', dstport, srcaddr, srcport, origcountry)
 		handle_tcp(self.request, dstport)
 
 	def getoriginaldest(self):
@@ -149,7 +153,9 @@ class UDP_socketobject_proxy:
 
 def process_incoming_udp(data, srcaddr, srcport, dstport):
 	timestr = datetime.datetime.now().strftime("%a %Y/%m/%d %H:%M:%S%z")
-	print colored("[{}]: Intruder {}:{} ({}) connected to fake port {}/udp".format(timestr, srcaddr, srcport, geoip.country_name_by_addr(srcaddr), dstport), 'magenta', attrs=['bold'])
+	origcountry = geoip.country_name_by_addr(srcaddr)
+	log_append('intruders', 'UDP', dstport, srcaddr, srcport, origcountry)
+	print colored("[{}]: Intruder {}:{} ({}) connected to fake port {}/udp".format(timestr, srcaddr, srcport, origcountry, dstport), 'magenta', attrs=['bold'])
 	handle_udp(UDP_socketobject_proxy(dstport), data, (srcaddr, srcport), dstport)
 
 def udp_raw_agent_dispatcher(incoming_packets, abort_callback):
