@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import StringIO, testrun
-from tcp_telnet import process_commandline
+from unixshell import process_commandline
 from utils import tee_received_text, tee_sent_text, tee_received_bin, tee_sent_bin
 from termcolor import colored
 

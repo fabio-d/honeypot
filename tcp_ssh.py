@@ -14,7 +14,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import paramiko, testrun, threading, traceback, sys
-from tcp_telnet import process_commandline, interactive_shell
+from unixshell import interactive_shell, process_commandline
 from utils import TextChannel, log_append, noexceptwrap
 
 paramiko.util.log_to_file('logs/tcp_ssh_server_paramiko.log')
