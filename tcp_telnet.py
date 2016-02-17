@@ -60,8 +60,12 @@ def process_commandline(socket, commandline):
 		socket.send('13628 pts/9    S      0:00 /usr/sbin/vftpd\n')
 		socket.send('45378 pts/9    S      0:00 /usr/sbin/syslogd\n')
 		socket.send('45982 pts/9    R+     0:00 /usr/bin/{}\n'.format(commandline))
-	elif 'id' in commandline:
+	elif commandline == 'id':
 		socket.send('uid=0(root) gid=0(root) groups=0(root)\n')
+	elif commandline == 'sh' or commandline == 'shell':
+		socket.send('\n')
+	elif 'cat /proc/version' in commandline:
+		socket.send('Linux version 2.4.6 (root@localhost) (gcc version 4.4.6 (GNU)) #9 Tue Jan 21 18:03:27 CST 2012\n')
 	elif busyboxmatch:
 		socket.send('{}: applet not found\n'.format(busyboxmatch))
 	else:
