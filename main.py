@@ -27,6 +27,7 @@ from tcp_httpproxy import make_tcp_httpproxy_handler
 from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
 
 from udp_sip import handle_udp_sip
+from udp_netis_backdoor import handle_udp_netis_backdoor
 from udp_hexdump import handle_udp_hexdump
 
 LOCAL_IP = '192.168.1.123'
@@ -87,11 +88,13 @@ def handle_tcp_default(sk, dstport):
 
 # UDP DISPATCHER
 
+udp_handlers = {
+	5060: handle_udp_sip,
+	53413: handle_udp_netis_backdoor
+}
+
 def handle_udp(socket, data, srcpeername, dstport):
-	if dstport == 5060:
-		handler = handle_udp_sip
-	else:
-		handler = handle_udp_hexdump
+	handler = udp_handlers.get(dstport, handle_udp_hexdump)
 	try:
 		handler(socket, data, srcpeername, dstport)
 	except Exception as err:
