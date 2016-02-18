@@ -19,6 +19,12 @@ from termcolor import colored
 import GeoIP
 geoip = GeoIP.new(GeoIP.GEOIP_MEMORY_CACHE | GeoIP.GEOIP_CHECK_CACHE)
 
+try:
+	from config import LOCAL_IP, TCP_MAGIC_PORT, UDP_DISCARD_FROM
+except ImportError:
+	print("Cannot start honeypot: No config.py found, see README.md")
+	sys.exit(1)
+
 from utils import log_append
 
 from tcp_ssh import handle_tcp_ssh
@@ -31,10 +37,6 @@ from tcp_hexdump import handle_tcp_hexdump, handle_tcp_hexdump_ssl
 from udp_sip import handle_udp_sip
 from udp_netis_backdoor import handle_udp_netis_backdoor
 from udp_hexdump import handle_udp_hexdump
-
-LOCAL_IP = '192.168.1.123'
-TCP_MAGIC_PORT = 1211
-UDP_DISCARD_FROM = [ '192.168.1.1', '192.168.1.4' ]
 
 # TCP DISPATCHER
 
