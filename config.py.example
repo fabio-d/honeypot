@@ -14,3 +14,7 @@ TCP_MAGIC_PORT = 1211
 # you see UDP spam from LAN devices.
 UDP_DISCARD_FROM = [ ]
 #UDP_DISCARD_FROM = [ '192.168.1.1', '192.168.1.4' ]
+
+# HTTP CONNECT requests for the following ports will not succeed
+HTTP_CONNECT_FORBIDDEN_PORTS = [ ]
+#HTTP_CONNECT_FORBIDDEN_PORTS = [ 25 ]

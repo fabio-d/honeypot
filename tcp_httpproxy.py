@@ -16,6 +16,8 @@
 import re, testrun, traceback, uuid
 from utils import TextChannel, log_append, readline
 
+from config import HTTP_CONNECT_FORBIDDEN_PORTS
+
 def make_tcp_httpproxy_handler(tcp_handler):
 	def handle_tcp_httpproxy(origsocket, dstport):
 		socket = TextChannel(origsocket)
@@ -35,7 +37,7 @@ def make_tcp_httpproxy_handler(tcp_handler):
 
 			log_append('tcp_httpproxy_connections', target, *origsocket.getpeername())
 
-			if False:
+			if port_num not in HTTP_CONNECT_FORBIDDEN_PORTS:
 				socket.send("HTTP/1.0 200 Connection established\nProxy-agent: Netscape-Proxy/1.1\n\n")
 			else:
 				socket.send("HTTP/1.0 407 Proxy authentication required\nProxy-agent: Netscape-Proxy/1.1\n\n")
